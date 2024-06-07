@@ -562,9 +562,10 @@ struct ad9545_out_clk {
 	bool				source_current;
 	enum ad9545_output_mode		output_mode;
 	uint32_t			source_ua;
-	struct no_os_clk_desc			hw;
+	struct no_os_clk_desc		hw;
 	unsigned int			address;
 	unsigned long			rate_requested_hz;
+	struct no_os_clk_desc		*parent_clk;
 };
 
 struct ad9545_dpll_profile {
@@ -635,6 +636,7 @@ struct ad9545_aux_tdc_clk {
 	struct ad9545_dev		*dev;
 	unsigned int			address;
 	unsigned int			pin_nr;
+	struct no_os_clk_desc		*parent_clk;
 };
 
 struct ad9545_aux_dpll_clk {
