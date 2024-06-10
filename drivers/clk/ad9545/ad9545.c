@@ -144,6 +144,11 @@ int32_t ad9545_write_mask(struct ad9545_dev *dev,
 	return ad9545_write_reg(dev, reg_addr, reg_data);
 }
 
+static int ad9545_io_update(struct ad9545_dev *dev)
+{
+	return ad9545_write_reg(dev, AD9545_IO_UPDATE, AD9545_UPDATE_REGS);
+}
+
 // FIXME: See how to calculate this
 static int ad9545_get_r_div(struct ad9545_dev *dev, int addr, uint32_t *r_div)
 {
@@ -1155,11 +1160,6 @@ static const struct no_os_clk_platform_ops ad9545_out_clk_ops = {
 
 
 /* ------------------------------------------------------------------------------------------------ */
-static int ad9545_io_update(struct ad9545_dev *dev)
-{
-	return ad9545_write_reg(dev, AD9545_IO_UPDATE, AD9545_UPDATE_REGS);
-}
-
 static int32_t ad9545_check_id(struct ad9545_dev *dev)
 {
 	
@@ -1409,6 +1409,36 @@ static int32_t ad9545_parse_aux_dpll(struct ad9545_dev *dev, struct ad9545_init_
 	return 0;
 }
 
+static int32_t ad9545_parse_init(struct ad9545_dev *dev,
+		     struct ad9545_init_param init_param)
+{
+	int32_t ret
+	/* Parse Init Inputs */
+	ret = ad9545_parse_inputs(dev, &init_param);
+	if (ret < 0)
+		goto out;
+	/* Parse PLLS */
+	ret = ad9545_parse_plls(dev, &init_param);
+	if (ret < 0)
+		goto out;
+	/* Parse Outputs */
+	ret = ad9545_parse_outputs(dev, &init_param);
+	if (ret < 0)
+		goto out;
+	/* Parse NCOS*/
+	ret = ad9545_parse_ncos(dev, &init_param);
+	if (ret < 0)
+		goto out;
+	/* Parse TDCS*/
+	ret = ad9545_parse_tdcs(dev, &init_param);
+	if (ret < 0)
+		goto out;
+	/* Parse DPLL */
+	ret = ad9545_parse_aux_dpll(dev, &init_param);
+out:
+	return ret;
+}
+
 /**
  * Initialize the device.
  * @param device - The device structure.
@@ -1456,18 +1486,7 @@ int32_t ad9545_init(struct ad9545_dev **device,
 		goto error;
 
 	/* Device settings */
-	/* Parse Init Inputs */
-	ret = ad9545_parse_inputs(dev, &init_param);
-	/* Parse PLLS */
-	ret = ad9545_parse_plls(dev, &init_param);
-	/* Parse Outputs */
-	ret = ad9545_parse_outputs(dev, &init_param);
-	/* Parse NCOS*/
-	ret = ad9545_parse_ncos(dev, &init_param);
-	/* Parse TDCS*/
-	ret = ad9545_parse_tdcs(dev, &init_param);
-	/* Parse DPLL */
-	ret = ad9545_parse_aux_dpll(dev, &init_param);
+	ad9545_parse_init(dev, init_param);
 	if (!ret) {
 		*device = dev;
 		printf("ad9545 successfully initialized\n");
@@ -1715,7 +1734,7 @@ static int ad9545_aux_ncos_setup(struct ad9545_dev *dev)
 			return ret;
 
 		init[i].name = ad9545_aux_nco_clk_names[i];
-		init[i].ops = &ad9545_nco_clk_ops;
+		init[i].platform_ops = &ad9545_nco_clk_ops;
 
 		// nco->hw.init = &init[i];
 		// ret = devm_clk_hw_register(st->dev, &nco->hw);
@@ -2138,7 +2157,7 @@ static int ad9545_plls_setup(struct ad9545_dev *dev)
 }
 
 
-static int ad9545_outputs_setup(struct ad9545_dev *dev) // TODO: DAQUI
+static int ad9545_outputs_setup(struct ad9545_dev *dev)
 {
 	struct clk_init_data init[NO_OS_ARRAY_SIZE(ad9545_out_clk_names)] = {0};
 	int out_i;
@@ -2180,55 +2199,63 @@ static int ad9545_outputs_setup(struct ad9545_dev *dev) // TODO: DAQUI
 			return ret;
 	}
 	//TODO:
-	dev->clks[AD9545_CLK_OUT] = devm_kzalloc(st->dev, ARRAY_SIZE(ad9545_out_clk_names) *
-						sizeof(struct clk *), GFP_KERNEL);
-	if (!st->clks[AD9545_CLK_OUT])
+	// dev->clks[AD9545_CLK_OUT] = devm_kzalloc(st->dev, ARRAY_SIZE(ad9545_out_clk_names) *
+	// 					sizeof(struct clk *), GFP_KERNEL);
+	
+	dev->clks[AD9545_CLK_OUT] = no_os_calloc(ARRAY_SIZE(ad9545_out_clk_names),
+						sizeof(struct no_os_clk_desc *));
+
+	if (!dev->clks[AD9545_CLK_OUT])
 		return -ENOMEM;
 
-	for (i = 0; i < ARRAY_SIZE(ad9545_out_clk_names); i++) {
-		if (!st->out_clks[i].output_used)
+	for (i = 0; i < NO_OS_ARRAY_SIZE(ad9545_out_clk_names); i++) {
+		if (!dev->out_clks[i].output_used)
 			continue;
 
 		init[i].name = ad9545_out_clk_names[i];
-		init[i].ops = &ad9545_out_clk_ops;
+		init[i].platform_ops = &ad9545_out_clk_ops;
+		init[i].dev_desc = dev;
 
 		if (i > 5)
-			init[i].parent_names = &ad9545_pll_clk_names[1];
+			// init[i].parent_names = &ad9545_pll_clk_names[1];
+			dev->out_clks[i].parent_clk = &dev->pll_clks[0].hw;
 		else
-			init[i].parent_names = &ad9545_pll_clk_names[0];
+			dev->out_clks[i].parent_clk = &dev->pll_clks[0].hw;
+			// init[i].parent_names = &ad9545_pll_clk_names[0];
 
 		init[i].num_parents = 1;
 
-		st->out_clks[i].hw.init = &init[i];
-		ret = devm_clk_hw_register(st->dev, &st->out_clks[i].hw);
+		// st->out_clks[i].hw.init = &init[i];
+		// ret = devm_clk_hw_register(st->dev, &st->out_clks[i].hw);
+		ret = no_os_clk_init(&dev->out_clks[i].hw, &init);
 		if (ret < 0)
 			return ret;
 
-		st->clks[AD9545_CLK_OUT][i] = &st->out_clks[i].hw;
+		dev->clks[AD9545_CLK_OUT][i] = &dev->out_clks[i].hw;
 	}
 
-	for (i = 0; i < ARRAY_SIZE(st->pll_clks); i++) {
+	for (i = 0; i < NO_OS_ARRAY_SIZE(dev->pll_clks); i++) {
 		reg = 0;
 
 		/* For hitless mode, wait for DPLL reference in order to sync outputs */
-		if (st->pll_clks[i].internal_zero_delay) {
-			reg = FIELD_PREP(AD9545_SYNC_CTRL_DPLL_REF_MSK, 1);
+		if (dev->pll_clks[i].internal_zero_delay) {
+			reg = no_os_field_prep(AD9545_SYNC_CTRL_DPLL_REF_MSK, 1);
 
-			ret = regmap_write(st->regmap, AD9545_SYNC_CTRLX(i), reg);
+			ret = ad9545_write_reg(dev, AD9545_SYNC_CTRLX(i), reg);
 			if (ret < 0)
 				return ret;
 
-			ret = ad9545_io_update(st);
+			ret = ad9545_io_update(dev);
 			if (ret < 0)
 				return ret;
 		}
 
-		reg |= FIELD_PREP(AD9545_SYNC_CTRL_MODE_MSK, 1);
-		ret = regmap_write(st->regmap, AD9545_SYNC_CTRLX(i), reg);
+		reg |= no_os_field_prep(AD9545_SYNC_CTRL_MODE_MSK, 1);
+		ret = ad9545_write_reg(dev, AD9545_SYNC_CTRLX(i), reg);
 		if (ret < 0)
 			return ret;
 
-		ret = ad9545_io_update(st);
+		ret = ad9545_io_update(dev);
 		if (ret < 0)
 			return ret;
 	}
@@ -2299,7 +2326,7 @@ static int ad9545_setup(struct ad9545_dev *dev)
 
 	/* check locks */
 	ret = ad9545_read_reg(dev, AD9545_PLL_STATUS, &val);
-	for (i = 0; i < ARRAY_SIZE(dev->pll_clks); i++)
+	for (i = 0; i < NO_OS_ARRAY_SIZE(dev->pll_clks); i++)
 		if (dev->pll_clks[i].pll_used && !AD9545_PLLX_LOCK(i, val))
 			pr_warning("PLL%d unlocked.\n", i);
 
