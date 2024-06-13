@@ -149,7 +149,6 @@ static int ad9545_io_update(struct ad9545_dev *dev)
 	return ad9545_write_reg(dev, AD9545_IO_UPDATE, AD9545_UPDATE_REGS);
 }
 
-// FIXME: See how to calculate this
 static int ad9545_get_r_div(struct ad9545_dev *dev, int addr, uint32_t *r_div)
 {
 	uint32_t regval;
@@ -678,7 +677,6 @@ static int ad9545_pll_set_rate(struct no_os_clk_desc *hw, uint64_t rate)
 
 static const struct no_os_clk_platform_ops ad9545_in_clk_ops = {
 	.clk_recalc_rate = ad9545_in_clk_recalc_rate,
-	// .init = ad9545_in_clk_debug_init,
 };
 static const struct no_os_clk_platform_ops ad9545_pll_clk_ops = {
 	.clk_recalc_rate = ad9545_pll_clk_recalc_rate,
@@ -776,7 +774,7 @@ static int32_t ad9545_nco_clk_recalc_rate(struct no_os_clk_desc *hw, uint64_t *r
 	return rate;
 }
 
-static int ad9545_nco_clk_round_rate(struct no_os_clk_desc *desc,
+static int ad9545_nco_clk_round_rate(struct no_os_clk_desc *hw,
 				       uint64_t rate, uint64_t *rounded_rate)
 {
 	return no_os_min(rate, (unsigned long)AD9545_NCO_FREQ_INT_MAX + 1);
@@ -866,7 +864,6 @@ static int ad9545_tdc_clk_recalc_rate(struct no_os_clk_desc *hw, uint64_t *rate)
 	uint64_t parent_rate;
 	uint32_t div;
 
-	// FIXME: Find a way to do this!
 	ret = no_os_clk_recalc_rate(clk->parent_clk, &parent_rate);
 	if (ret < 0)
 		return -EINVAL;
@@ -953,7 +950,7 @@ static const struct no_os_clk_platform_ops ad9545_aux_tdc_clk_ops = {
 	.clk_set_rate = ad9545_tdc_clk_set_rate,
 };
 
-static int ad9545_aux_dpll_clk_recalc_rate(struct no_os_clk_desc *desc,
+static int ad9545_aux_dpll_clk_recalc_rate(struct no_os_clk_desc *hw,
 			       uint64_t *rate)
 {
 	return 0;
@@ -1242,7 +1239,7 @@ static int32_t ad9545_parse_inputs(struct ad9545_dev *dev, struct ad9545_init_pa
 		dev->ref_in_clks[i].r_div_ratio = init_param->ref_in_clks[i].r_div_ratio;
 		dev->ref_in_clks[i].d_tol_ppb = init_param->ref_in_clks[i].d_tol_ppb;
 
-		for (i = 0; i < NO_OS_ARRAY_SIZE(ad9545_hyst_scales_bp); i++) { // FIXME: Correct this
+		for (i = 0; i < NO_OS_ARRAY_SIZE(ad9545_hyst_scales_bp); i++) {
 			if (ad9545_hyst_scales_bp[i] == init_param->ref_in_clks[i].monitor_hyst_scale) {
 				dev->ref_in_clks[i].monitor_hyst_scale = i;
 				break;
@@ -1313,7 +1310,7 @@ static int32_t ad9545_parse_plls(struct ad9545_dev *dev, struct ad9545_init_para
 		dev->pll_clks[addr].slew_rate_limit_ps = init_param->pll_clks[addr].slew_rate_limit_ps;
 		dev->pll_clks[addr].internal_zero_delay = init_param->pll_clks[addr].internal_zero_delay;
 
-		if (init_param->pll_clks[addr].internal_zero_delay_source >= ARRAY_SIZE(ad9545_out_clk_names)) {
+		if (init_param->pll_clks[addr].internal_zero_delay_source >= NO_OS_ARRAY_SIZE(ad9545_out_clk_names)) {
 			pr_err("Invalid zero-delay fb path: %u.\n", init_param->pll_clks[addr].internal_zero_delay_source);
 			ret = -EINVAL;
 			goto out_fail;
@@ -1413,6 +1410,11 @@ static int32_t ad9545_parse_init(struct ad9545_dev *dev,
 		     struct ad9545_init_param init_param)
 {
 	int32_t ret
+
+	dev->sys_clk.ref_freq_hz = init_param.sys_clk.ref_freq_hz;
+	dev->sys_clk.sys_clk_crystal = init_param.sys_clk.sys_clk_crystal;
+	dev->sys_clk.sys_clk_freq_doubler = init_param.sys_clk.sys_clk_freq_doubler;
+
 	/* Parse Init Inputs */
 	ret = ad9545_parse_inputs(dev, &init_param);
 	if (ret < 0)
@@ -1451,7 +1453,7 @@ int32_t ad9545_init(struct ad9545_dev **device,
 {
 	struct ad9545_dev	*dev;
 	struct no_os_clk_desc **clocks = NULL;
-	struct no_os_clk_init_param clk_init;
+	// struct no_os_clk_init_param clk_init;
 	int32_t ret;
 
 	dev = (struct ad9545_dev *)no_os_malloc(sizeof(*dev));
@@ -1550,10 +1552,10 @@ static int ad9545_sys_clk_setup(struct ad9545_dev *dev)
 	/* enable crystal maintaining amplifier */
 	val = 0;
 	if (dev->sys_clk.sys_clk_crystal)
-		val |= BIT(3);
+		val |= NO_OS_BIT(3);
 
 	if (dev->sys_clk.sys_clk_freq_doubler)
-		val |= BIT(0);
+		val |= NO_OS_BIT(0);
 
 	ret = ad9545_write_reg(dev, AD9545_SYS_CLK_INPUT, val);
 	if (ret < 0)
@@ -1563,7 +1565,7 @@ static int ad9545_sys_clk_setup(struct ad9545_dev *dev)
 	ref_freq_milihz = no_os_mul_u32_u32(dev->sys_clk.ref_freq_hz, 1000);
 	regval64 = ref_freq_milihz;
 
-	ret = ad9545_write_reg_multiple(dev, AD9545_SYS_CLK_REF_FREQ, &regval64, 5); //TODO: Check this
+	ret = ad9545_write_reg_multiple(dev, AD9545_SYS_CLK_REF_FREQ, &regval64, 5);
 	if (ret < 0)
 		return ret;
 
@@ -1576,8 +1578,7 @@ static int ad9545_sys_clk_setup(struct ad9545_dev *dev)
 
 static int ad9545_input_refs_setup(struct ad9545_dev *dev)
 {
-	// struct clk_init_data init[4] = {0}; // TODO: See this
-	struct no_os_clk_init_param init[4] = {0}; // TODO: See this
+	struct no_os_clk_init_param init[4] = {0};
 	uint32_t regval;
 	uint64_t regval64;
 	uint64_t period_es;
@@ -1683,11 +1684,10 @@ static int ad9545_input_refs_setup(struct ad9545_dev *dev)
 
 		init[i].name = ad9545_in_clk_names[i];
 		init[i].platform_ops = &ad9545_in_clk_ops;
-		// init[i].parent_names = &ad9545_ref_clk_names[i];
+		// init[i].parent_names = &ad9545_ref_clk_names[i]; // TODO: where is define the parents?
 		init[i].hw_ch_num = i;
+		init[i].dev_desc = dev;
 
-		// dev->ref_in_clks[i].hw.init = &init[i];
-		// ret = devm_clk_hw_register(st->dev, &st->ref_in_clks[i].hw);
 		ret = no_os_clk_init(&dev->ref_in_clks[i].hw, &init);
 		if (ret < 0)
 			return ret;
@@ -1735,9 +1735,9 @@ static int ad9545_aux_ncos_setup(struct ad9545_dev *dev)
 
 		init[i].name = ad9545_aux_nco_clk_names[i];
 		init[i].platform_ops = &ad9545_nco_clk_ops;
+		init[i].hw_ch_num = i;
+		init[i].dev_desc = dev;
 
-		// nco->hw.init = &init[i];
-		// ret = devm_clk_hw_register(st->dev, &nco->hw);
 		ret = no_os_clk_init(&nco->hw, &init);
 		if (ret < 0)
 			return ret;
@@ -1785,29 +1785,23 @@ static int ad9545_calib_system_clock(struct ad9545_dev *dev)
 
 static int ad9545_aux_tdcs_setup(struct ad9545_dev *dev)
 {
-	// struct clk_init_data init[ARRAY_SIZE(ad9545_aux_tdc_clk_names)] = {0};
-	struct no_os_clk_init_param init[ARRAY_SIZE(ad9545_aux_tdc_clk_names)] = {0}; // TODO: See this
+	struct no_os_clk_init_param init[NO_OS_ARRAY_SIZE(ad9545_aux_tdc_clk_names)] = {0};
 	struct ad9545_aux_tdc_clk *tdc;
 	int ret;
 	int i;
 
-	// st->clks[AD9545_CLK_AUX_TDC] = devm_kcalloc(st->dev, ARRAY_SIZE(ad9545_aux_tdc_clk_names),
-	// 					    sizeof(*st->clks[AD9545_CLK_AUX_TDC]),
-	// 					    GFP_KERNEL);
-
 	dev->clks[AD9545_CLK_AUX_TDC] = no_os_calloc(NO_OS_ARRAY_SIZE(ad9545_aux_tdc_clk_names),
-						sizeof(*st->clks[AD9545_CLK_AUX_TDC]));
-	
-	if (!st->clks[AD9545_CLK_AUX_TDC])
+						sizeof(*dev->clks[AD9545_CLK_AUX_TDC]));	
+	if (!dev->clks[AD9545_CLK_AUX_TDC])
 		return -ENOMEM;
 
-	for (i = 0; i < ARRAY_SIZE(st->aux_tdc_clks); i++) {
-		tdc = &st->aux_tdc_clks[i];
+	for (i = 0; i < NO_OS_ARRAY_SIZE(dev->aux_tdc_clks); i++) {
+		tdc = &dev->aux_tdc_clks[i];
 		if (!tdc->tdc_used)
 			continue;
 
 		/* redirect Mx pin to this TDC */
-		ret = regmap_write(st->regmap, AD9545_MX_PIN(tdc->pin_nr),
+		ret = regmap_write(dev->regmap, AD9545_MX_PIN(tdc->pin_nr),
 				   AD9545_MX_TO_TDCX(tdc->address));
 		if (ret < 0)
 			return ret;
@@ -1819,10 +1813,8 @@ static int ad9545_aux_tdcs_setup(struct ad9545_dev *dev)
 		// FIXME: add parent
 		// init[i].parent_names = &ad9545_ref_m_clk_names[tdc->pin_nr];
 		// init[i].num_parents = 1;
-		// tdc->hw.init = &init[i];
 
-		// ret = devm_clk_hw_register(st->dev, &tdc->hw);
-		ret = no_os_clk_init(&nco->hw, &init);
+		ret = no_os_clk_init(&tdc->hw, &init);
 		if (ret < 0)
 			return ret;
 
@@ -1835,8 +1827,7 @@ static int ad9545_aux_tdcs_setup(struct ad9545_dev *dev)
 static int ad9545_aux_dpll_setup(struct ad9545_dev *dev)
 {
 	struct ad9545_aux_dpll_clk *clk;
-	// struct clk_init_data init;
-	struct no_os_clk_init_param init; // TODO: See this
+	struct no_os_clk_init_param init;
 	uint16_t regval;
 	int ret;
 	uint32_t val;
@@ -1850,12 +1841,12 @@ static int ad9545_aux_dpll_setup(struct ad9545_dev *dev)
 
 	if (clk->source < NO_OS_ARRAY_SIZE(ad9545_in_clk_names)) {
 		val = clk->source;
-		init.parent_names = &ad9545_in_clk_names[val];
+		init.parent_names = &ad9545_in_clk_names[val]; // TODO: check how to replace this parent thing for dpll
 	} else {
 		val = clk->source - NO_OS_ARRAY_SIZE(ad9545_in_clk_names);
 		if (val > NO_OS_ARRAY_SIZE(ad9545_aux_tdc_clk_names))
 			return -EINVAL;
-		init.parent_names = &ad9545_aux_tdc_clk_names[val];
+		init.parent_names = &ad9545_aux_tdc_clk_names[val];  // TODO: check how to replace this parent thing for dpll
 		val = val + 0x6;
 	}
 
@@ -1898,11 +1889,8 @@ static int ad9545_aux_dpll_setup(struct ad9545_dev *dev)
 	init.platform_ops = &ad9545_aux_dpll_clk_ops;
 	init.hw_ch_num = 1;
 	init.dev = dev;
-	// init.num_parents = 1; // TODO: PARENTS
 
-	// clk->hw.init = &init;
-	// return devm_clk_hw_register(st->dev, &clk->hw);
-	return no_os_clk_init(&clk, &init);
+	return no_os_clk_init(&clk->hw, &init);
 }
 
 
@@ -2034,10 +2022,8 @@ static int32_t ad9545_pll_fast_acq_setup(struct ad9545_pll_clk *pll, int profile
 static int ad9545_plls_setup(struct ad9545_dev *dev)
 {
 	struct no_os_clk_init_param init[2] = {0};
-	// struct clk_init_data init[2] = {0};
 	struct ad9545_pll_clk *pll;
 	struct no_os_clk_desc *hw;
-	// struct clk_hw *hw;
 	int tdc_source;
 	uint32_t regval;
 	int ret;
@@ -2045,8 +2031,6 @@ static int ad9545_plls_setup(struct ad9545_dev *dev)
 	int i;
 	int j;
 
-	// dev->clks[AD9545_CLK_PLL] = devm_kzalloc(st->dev, ARRAY_SIZE(ad9545_pll_clk_names) *
-	// 					sizeof(struct clk *), GFP_KERNEL);
 	dev->clks[AD9545_CLK_PLL] = no_os_calloc(NO_OS_ARRAY_SIZE(ad9545_pll_clk_names),
 						sizeof(struct no_os_clk_desc *));
 	if (!dev->clks[AD9545_CLK_PLL])
@@ -2062,21 +2046,14 @@ static int ad9545_plls_setup(struct ad9545_dev *dev)
 
 		init[i].name = ad9545_pll_clk_names[i];
 		init[i].platform_ops = &ad9545_pll_clk_ops;
-		// init[i].num_parents = 0;
+		init[i].hw_ch_num = i;
+		init[i].dev_desc = dev;
 		pll->num_parents = 0;
 
 		for (j = 0; j < AD9545_MAX_DPLL_PROFILES; j++)
 			if (pll->profiles[j].en)
 				pll->num_parents++;
-				// init[i].num_parents++;
 
-		// init[i].parent_hws = no_os_calloc(dev, init[i].num_parents,
-		// 				  sizeof(*init[i].parent_hws));
-		
-		// if (!init[i].parent_hws)
-		// 	return -ENOMEM;
-
-		// pll->num_parents = init[i].num_parents;
 		pll->parents = no_os_calloc(dev, pll->num_parents,
 						  sizeof(*pll->parents));
 		if (!pll->parents)
@@ -2134,7 +2111,7 @@ static int ad9545_plls_setup(struct ad9545_dev *dev)
 				hw = &dev->aux_nco_clks[tdc_source - NO_OS_ARRAY_SIZE(ad9545_ref_clk_names)].hw;
 			else
 				hw = &dev->ref_in_clks[tdc_source].hw;
-			// init[i].parent_hws[j] = hw;
+
 			pll->parents[j] = hw;
 
 			if (pll->profiles[j].fast_acq_excess_bw > 0) {
@@ -2143,14 +2120,11 @@ static int ad9545_plls_setup(struct ad9545_dev *dev)
 					return ret;
 			}
 		}
-
-		// pll->hw.init = &init[i]; // !!!
-		// ret = devm_clk_hw_register(st->dev, &pll->hw);
 		ret = no_os_clk_init(&pll->hw, &init);
 		if (ret < 0)
 			return ret;
 
-		st->clks[AD9545_CLK_PLL][i] = &pll->hw;
+		dev->clks[AD9545_CLK_PLL][i] = &pll->hw;
 	}
 
 	return 0;
@@ -2185,9 +2159,9 @@ static int ad9545_outputs_setup(struct ad9545_dev *dev)
 
 		for (j = 0; j < NO_OS_ARRAY_SIZE(ad9545_out_source_ua); j++)
 			if (ad9545_out_source_ua[j] == dev->out_clks[out_i].source_ua)
-				reg |= no_os_field_prep(GENMASK(2, 1), j);
+				reg |= no_os_field_prep(NO_OS_GENMASK(2, 1), j);
 
-		reg |= no_os_field_prep(GENMASK(4, 3), dev->out_clks[out_i].output_mode);
+		reg |= no_os_field_prep(NO_OS_GENMASK(4, 3), dev->out_clks[out_i].output_mode);
 
 		if (i < 3)
 			addr = AD9545_DRIVER_0A_CONF + i;
@@ -2198,13 +2172,9 @@ static int ad9545_outputs_setup(struct ad9545_dev *dev)
 		if (ret < 0)
 			return ret;
 	}
-	//TODO:
-	// dev->clks[AD9545_CLK_OUT] = devm_kzalloc(st->dev, ARRAY_SIZE(ad9545_out_clk_names) *
-	// 					sizeof(struct clk *), GFP_KERNEL);
 	
-	dev->clks[AD9545_CLK_OUT] = no_os_calloc(ARRAY_SIZE(ad9545_out_clk_names),
+	dev->clks[AD9545_CLK_OUT] = no_os_calloc(NO_OS_ARRAY_SIZE(ad9545_out_clk_names),
 						sizeof(struct no_os_clk_desc *));
-
 	if (!dev->clks[AD9545_CLK_OUT])
 		return -ENOMEM;
 
@@ -2214,19 +2184,16 @@ static int ad9545_outputs_setup(struct ad9545_dev *dev)
 
 		init[i].name = ad9545_out_clk_names[i];
 		init[i].platform_ops = &ad9545_out_clk_ops;
+		init[i].hw_ch_num  = i;
 		init[i].dev_desc = dev;
 
 		if (i > 5)
-			// init[i].parent_names = &ad9545_pll_clk_names[1];
 			dev->out_clks[i].parent_clk = &dev->pll_clks[0].hw;
 		else
 			dev->out_clks[i].parent_clk = &dev->pll_clks[0].hw;
-			// init[i].parent_names = &ad9545_pll_clk_names[0];
 
 		init[i].num_parents = 1;
 
-		// st->out_clks[i].hw.init = &init[i];
-		// ret = devm_clk_hw_register(st->dev, &st->out_clks[i].hw);
 		ret = no_os_clk_init(&dev->out_clks[i].hw, &init);
 		if (ret < 0)
 			return ret;

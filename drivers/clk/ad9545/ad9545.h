@@ -557,55 +557,55 @@ static const struct ad9545_outputs_regs ad9545_out_regs[] = {
 };
 
 struct ad9545_out_clk {
-	struct ad9545_dev		*dev;
-	bool				output_used;
-	bool				source_current;
-	enum ad9545_output_mode		output_mode;
-	uint32_t			source_ua;
-	struct no_os_clk_desc		hw;
-	unsigned int			address;
-	unsigned long			rate_requested_hz;
-	struct no_os_clk_desc		*parent_clk;
+	struct ad9545_dev	*dev;
+	bool			output_used;
+	bool			source_current;
+	enum ad9545_output_mode	output_mode;
+	uint32_t		source_ua;
+	struct no_os_clk_desc	hw;
+	unsigned int		address;
+	unsigned long		rate_requested_hz;
+	struct no_os_clk_desc	*parent_clk;
 };
 
 struct ad9545_dpll_profile {
-	unsigned int			address;
-	unsigned int			parent_index;
-	unsigned int			priority;
-	unsigned int			loop_bw_uhz;
-	unsigned int			fast_acq_excess_bw;
-	unsigned int			fast_acq_timeout_ms;
-	unsigned int			fast_acq_settle_ms;
-	bool				en;
-	uint8_t			tdc_source;
-	bool				fb_tagging;
+	unsigned int	address;
+	unsigned int	parent_index;
+	unsigned int	priority;
+	unsigned int	loop_bw_uhz;
+	unsigned int	fast_acq_excess_bw;
+	unsigned int	fast_acq_timeout_ms;
+	unsigned int	fast_acq_settle_ms;
+	bool		en;
+	uint8_t		tdc_source;
+	bool		fb_tagging;
 };
 
 struct ad9545_pll_clk {
 	struct ad9545_dev		*dev;
 	bool				pll_used;
 	unsigned int			address;
-	struct no_os_clk_desc			hw;
+	struct no_os_clk_desc		hw;
 	unsigned int			num_parents;
-	const struct no_os_clk_desc		**parents;
+	const struct no_os_clk_desc	**parents;
 	struct ad9545_dpll_profile	profiles[AD9545_MAX_DPLL_PROFILES];
 	unsigned int			free_run_freq;
 	unsigned int			fast_acq_trigger_mode;
 	unsigned long			rate_requested_hz;
 	bool				internal_zero_delay;
-	uint8_t			internal_zero_delay_source;
+	uint8_t				internal_zero_delay_source;
 	unsigned long			internal_zero_delay_source_rate_hz;
-	uint32_t				slew_rate_limit_ps;
+	uint32_t			slew_rate_limit_ps;
 };
 
 struct ad9545_ref_in_clk {
-	struct no_os_clk_desc		*hw;
+	struct no_os_clk_desc		hw;
 	struct ad9545_dev		*dev;
-	uint32_t		r_div_ratio;
+	uint32_t			r_div_ratio;
 	bool				ref_used;
-	uint32_t				d_tol_ppb;
+	uint32_t			d_tol_ppb;
 	uint8_t				monitor_hyst_scale;
-	uint32_t				valid_t_ms;
+	uint32_t			valid_t_ms;
 	struct no_os_clk_desc		*parent_clk;
 	unsigned int			address;
 	enum ad9545_ref_mode		mode;
@@ -622,7 +622,7 @@ struct ad9545_ref_in_clk {
 };
 
 struct ad9545_aux_nco_clk {
-	struct no_os_clk_desc			hw;
+	struct no_os_clk_desc		hw;
 	bool				nco_used;
 	struct ad9545_dev		*dev;
 	unsigned int			address;
@@ -704,9 +704,6 @@ struct ad9545_init_param {
 	struct no_os_spi_init_param	spi_init;
 	/* I2C */
 	struct no_os_i2c_init_param	i2c_init;
-	/* GPIO */
-	struct no_os_gpio_init_param	gpio_int1;
-	struct no_os_gpio_init_param	gpio_int2;
 	/* Device Settings */
 	enum ad9545_comm_type		comm_type;
 	struct ad9545_sys_clk		sys_clk;
