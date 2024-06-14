@@ -40,8 +40,6 @@
 /******************************************************************************/
 /***************************** Include Files **********************************/
 /******************************************************************************/
-#include <asm-generic/errno-base.h>
-#include <cstdint>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -53,6 +51,8 @@
 #include "ad9545.h"
 #include "no_os_alloc.h"
 #include "sys/types.h"
+
+static const char *ad9545_aux_dpll_name = "AUX_DPLL";
 
 /******************************************************************************/
 /************************** Functions Implementation **************************/
@@ -66,7 +66,7 @@
  * @return 0 in case of success, negative error code otherwise.
  */
 int32_t ad9545_read_reg(struct ad9545_dev *dev,
-			 uint8_t reg_addr,
+			 uint16_t reg_addr,
 			 uint8_t *reg_data)
 {
 	return dev->reg_read(dev, reg_addr, reg_data);
@@ -80,7 +80,7 @@ int32_t ad9545_read_reg(struct ad9545_dev *dev,
  * @return 0 in case of success, negative error code otherwise.
  */
 int32_t ad9545_write_reg(struct ad9545_dev *dev,
-			  uint8_t reg_addr,
+			  uint16_t reg_addr,
 			  uint8_t reg_data)
 {
 	return dev->reg_write(dev, reg_addr, reg_data);
@@ -127,7 +127,7 @@ int32_t ad9545_write_reg_multiple(struct ad9545_dev *dev,
  * @return 0 in case of success, negative error code otherwise.
  */
 int32_t ad9545_write_mask(struct ad9545_dev *dev,
-			   uint8_t reg_addr,
+			   uint16_t reg_addr,
 			   uint32_t mask,
 			   uint8_t data)
 {
@@ -353,7 +353,7 @@ static int32_t ad9545_pll_clk_recalc_rate(struct no_os_clk_desc *hw, uint64_t *r
 			return 0;
 
 		/* Output rate of APLL = parent_rate * (N + (Frac / Mod)) * M */
-		// output_rate = mul_u64_u32_div(frac * parent_rate, m, mod);
+		// output_rate = mul_u64_u32_div(frac * parent_rate, m, mod); // TODO: check this
 		output_rate = no_os_mul_u64_u32_shr(frac * parent_rate, m, 0);
 		output_rate = no_os_div_u64(output_rate, mod);
 		output_rate += parent_rate * n * m;
@@ -469,7 +469,6 @@ static uint64_t ad9545_calc_pll_params(struct ad9545_pll_clk *clk, unsigned long
 static int ad9545_pll_clk_round_rate(struct no_os_clk_desc *hw,
 				       uint64_t rate, uint64_t *rounded_rate)
 {
-	// struct ad9545_pll_clk *clk = to_pll_clk(hw);
 	struct ad9545_dev *dev = hw->dev_desc;
 	struct ad9545_pll_clk *clk = &dev->pll_clks[hw->hw_ch_num];
 	uint64_t parent_rate;
@@ -498,7 +497,9 @@ static int ad9545_pll_clk_round_rate(struct no_os_clk_desc *hw,
 	ret = no_os_clk_recalc_rate(clk->parents[i], &parent_rate);
 	zero_delay = clk->internal_zero_delay;
 
-	return ad9545_calc_pll_params(clk, rate, parent_rate, zero_delay, &m, &n, &frac, &mod, i);
+	*rounded_rate = ad9545_calc_pll_params(clk, rate, parent_rate, zero_delay, &m, &n, &frac, &mod, i);
+
+	return 0; 
 }
 
 static int ad9545_pll_set_feedback_tagging(struct ad9545_pll_clk *clk, unsigned long rate,
@@ -571,12 +572,10 @@ static int ad9545_set_freerun_freq(struct ad9545_pll_clk *clk, uint32_t freq)
 }
 
 
-// static int ad9545_pll_set_rate(struct clk_hw *hw, unsigned long rate, unsigned long parent_rate)
 static int ad9545_pll_set_rate(struct no_os_clk_desc *hw, uint64_t rate)
 {
 	struct ad9545_dev *dev = hw->dev_desc;
 	struct ad9545_pll_clk *clk = &dev->pll_clks[hw->hw_ch_num];
-	// struct ad9545_pll_clk *clk = to_pll_clk(hw);
 	uint64_t parent_rate;
 	unsigned long out_rate;
 	unsigned long frac;
@@ -682,7 +681,7 @@ static const struct no_os_clk_platform_ops ad9545_pll_clk_ops = {
 	.clk_recalc_rate = ad9545_pll_clk_recalc_rate,
 	.clk_round_rate = ad9545_pll_clk_round_rate,
 	.clk_set_rate = ad9545_pll_set_rate,
-	// .get_parent = ad9545_pll_get_parent,
+	// .get_parent = ad9545_pll_get_parent, //TODO: ??
 	// .debug_init = ad9545_pll_debug_init,
 };
 
@@ -736,7 +735,7 @@ static int ad9545_get_nco_freq(struct ad9545_dev *dev, int addr, uint64_t *freq)
 
 	return 0;
 }
-
+//FIXME: Where to put this?
 #define NO_OS_BIT_ULL(x) ((uint64_t) 1 << (x))
 static int ad9545_get_nco_freq_hz(struct ad9545_dev *dev, int addr, uint32_t *freq)
 {
@@ -762,22 +761,25 @@ static int32_t ad9545_nco_clk_recalc_rate(struct no_os_clk_desc *hw, uint64_t *r
 {
 	struct ad9545_dev *dev = hw->dev_desc;
 	struct ad9545_aux_nco_clk *clk = &dev->aux_nco_clks[hw->hw_ch_num];
-	uint32_t rate;
+	uint32_t get_rate;
 	int ret;
 
-	ret = ad9545_get_nco_freq_hz(clk->dev, clk->address, &rate);
+	ret = ad9545_get_nco_freq_hz(clk->dev, clk->address, &get_rate);
 	if (ret < 0) {
 		pr_err("Could not read NCO freq.");
-		return 0;
+		return -EINVAL;
 	}
-
-	return rate;
+	*rate = get_rate;
+	
+	return 0;
 }
 
 static int ad9545_nco_clk_round_rate(struct no_os_clk_desc *hw,
 				       uint64_t rate, uint64_t *rounded_rate)
 {
-	return no_os_min(rate, (unsigned long)AD9545_NCO_FREQ_INT_MAX + 1);
+	*rounded_rate = no_os_min(rate, (unsigned long)AD9545_NCO_FREQ_INT_MAX + 1);
+	
+	return 0;
 }
 
 static int ad9545_set_nco_center_freq(struct ad9545_dev *dev, int addr, uint64_t freq)
@@ -901,7 +903,7 @@ static int ad9545_tdc_clk_round_rate(struct no_os_clk_desc *hw,
 	div = no_os_clamp_t(uint8_t, NO_OS_DIV_ROUND_UP((uint64_t)parent_rate, rate), 1, UINT8_MAX);
 
 	*rounded_rate = NO_OS_DIV_ROUND_UP((uint64_t)parent_rate, div);
-	return ret;
+	return 0;
 }
 
 static int ad9545_set_tdc_div(struct ad9545_aux_tdc_clk *clk, uint32_t div)
@@ -953,6 +955,13 @@ static const struct no_os_clk_platform_ops ad9545_aux_tdc_clk_ops = {
 static int ad9545_aux_dpll_clk_recalc_rate(struct no_os_clk_desc *hw,
 			       uint64_t *rate)
 {
+	struct ad9545_dev *dev = hw->dev_desc;
+	struct ad9545_aux_dpll_clk *clk = &dev->aux_dpll_clk;
+	uint64_t parent_rate;
+
+	no_os_clk_recalc_rate(clk->parent_clk, &parent_rate);
+	*rate = parent_rate;
+	
 	return 0;
 }
 
@@ -1009,7 +1018,9 @@ static int ad9545_trigger_n_shot(struct ad9545_out_clk *clk)
 
 static int ad9545_out_clk_get_nshot(struct no_os_clk_desc *hw)
 {
-	struct ad9545_out_clk *clk = to_out_clk(hw);
+	// struct ad9545_out_clk *clk = to_out_clk(hw);
+	struct ad9545_dev *dev = hw->dev_desc;
+	struct ad9545_out_clk *clk = &dev->out_clks[hw->hw_ch_num];
 	int channel = 0;
 	int ret;
 	uint32_t val;
@@ -1054,20 +1065,6 @@ static void ad9545_out_clk_disable(struct no_os_clk_desc *hw)
 	 */
 	if (!clk_get_nshot(hw))
 		ad9545_output_muting(clk, true);
-}
-
-static int ad9545_get_q_div(struct ad9545_dev *dev, int addr, uint32_t *q_div)
-{
-	uint32_t regval;
-	int ret;
-
-	ret = ad9545_read_reg_multiple(dev, AD9545_QX_DIV(addr), &regval, 4);
-	if (ret < 0)
-		return ret;
-
-	*q_div = regval;
-
-	return 0;
 }
 
 static int ad9545_set_q_div(struct ad9545_dev *dev, int addr, uint32_t q_div)
@@ -1178,6 +1175,7 @@ static int32_t ad9545_check_id(struct ad9545_dev *dev)
 		pr_err("Unrecognized CHIP_ID 0x%X\n", chip_id);
 		return -ENODEV;
 	}
+	return ret;
 }
 
 static int ad9545_set_r_div(struct ad9545_dev *dev, uint32_t div, int addr)
@@ -1324,7 +1322,7 @@ static int32_t ad9545_parse_plls(struct ad9545_dev *dev, struct ad9545_init_para
 		}
 		dev->pll_clks[addr].internal_zero_delay_source_rate_hz = init_param->pll_clks[addr].internal_zero_delay_source_rate_hz;
 
-		ret = ad9545_parse_dt_pll_profiles(dev, init_param, addr);
+		ret = ad9545_parse_pll_profiles(dev, init_param, addr);
 		if (ret)
 			goto out_fail;
 	}
@@ -1409,7 +1407,7 @@ static int32_t ad9545_parse_aux_dpll(struct ad9545_dev *dev, struct ad9545_init_
 static int32_t ad9545_parse_init(struct ad9545_dev *dev,
 		     struct ad9545_init_param init_param)
 {
-	int32_t ret
+	int32_t ret;
 
 	dev->sys_clk.ref_freq_hz = init_param.sys_clk.ref_freq_hz;
 	dev->sys_clk.sys_clk_crystal = init_param.sys_clk.sys_clk_crystal;
@@ -1418,27 +1416,25 @@ static int32_t ad9545_parse_init(struct ad9545_dev *dev,
 	/* Parse Init Inputs */
 	ret = ad9545_parse_inputs(dev, &init_param);
 	if (ret < 0)
-		goto out;
+		return ret;
 	/* Parse PLLS */
 	ret = ad9545_parse_plls(dev, &init_param);
 	if (ret < 0)
-		goto out;
+		return ret;
 	/* Parse Outputs */
 	ret = ad9545_parse_outputs(dev, &init_param);
 	if (ret < 0)
-		goto out;
+		return ret;
 	/* Parse NCOS*/
 	ret = ad9545_parse_ncos(dev, &init_param);
 	if (ret < 0)
-		goto out;
+		return ret;
 	/* Parse TDCS*/
 	ret = ad9545_parse_tdcs(dev, &init_param);
 	if (ret < 0)
-		goto out;
+		return ret;
 	/* Parse DPLL */
-	ret = ad9545_parse_aux_dpll(dev, &init_param);
-out:
-	return ret;
+	return ad9545_parse_aux_dpll(dev, &init_param);
 }
 
 /**
@@ -1705,7 +1701,7 @@ static int ad9545_input_refs_setup(struct ad9545_dev *dev)
 
 static int ad9545_aux_ncos_setup(struct ad9545_dev *dev)
 {
-	struct clk_init_data init[2] = {0};
+	struct no_os_clk_init_param init[2] = {0};
 	struct ad9545_aux_nco_clk *nco;
 	uint32_t regval;
 	int ret;
@@ -1801,7 +1797,7 @@ static int ad9545_aux_tdcs_setup(struct ad9545_dev *dev)
 			continue;
 
 		/* redirect Mx pin to this TDC */
-		ret = regmap_write(dev->regmap, AD9545_MX_PIN(tdc->pin_nr),
+		ret = ad9545_write_reg(dev, AD9545_MX_PIN(tdc->pin_nr),
 				   AD9545_MX_TO_TDCX(tdc->address));
 		if (ret < 0)
 			return ret;
@@ -1809,7 +1805,7 @@ static int ad9545_aux_tdcs_setup(struct ad9545_dev *dev)
 		init[i].name = ad9545_aux_tdc_clk_names[i];
 		init[i].platform_ops = &ad9545_aux_tdc_clk_ops;
 		init[i].hw_ch_num = i;
-		init[i].dev = dev; 
+		init[i].dev_desc = dev; 
 		// FIXME: add parent
 		// init[i].parent_names = &ad9545_ref_m_clk_names[tdc->pin_nr];
 		// init[i].num_parents = 1;
@@ -1841,12 +1837,14 @@ static int ad9545_aux_dpll_setup(struct ad9545_dev *dev)
 
 	if (clk->source < NO_OS_ARRAY_SIZE(ad9545_in_clk_names)) {
 		val = clk->source;
-		init.parent_names = &ad9545_in_clk_names[val]; // TODO: check how to replace this parent thing for dpll
+		clk->parent_clk = &dev->ref_in_clks[val].hw;
+		// init.parent_names = &ad9545_in_clk_names[val]; // TODO: check how to replace this parent thing for dpll
 	} else {
 		val = clk->source - NO_OS_ARRAY_SIZE(ad9545_in_clk_names);
 		if (val > NO_OS_ARRAY_SIZE(ad9545_aux_tdc_clk_names))
 			return -EINVAL;
-		init.parent_names = &ad9545_aux_tdc_clk_names[val];  // TODO: check how to replace this parent thing for dpll
+		clk->parent_clk = &dev->ref_in_clks[val].hw;
+		// init.parent_names = &ad9545_aux_tdc_clk_names[val];  // TODO: check how to replace this parent thing for dpll
 		val = val + 0x6;
 	}
 
@@ -1856,7 +1854,7 @@ static int ad9545_aux_dpll_setup(struct ad9545_dev *dev)
 
 	/* write loop bandwidth in dHz */
 	regval = clk->loop_bw_mhz / 100;
-	ret = ad9545_write_reg(dev, AD9545_AUX_DPLL_LOOP_BW, &regval, 2);
+	ret = ad9545_write_reg_multiple(dev, AD9545_AUX_DPLL_LOOP_BW, &regval, 2);
 	if (ret < 0)
 		return ret;
 
@@ -1888,7 +1886,7 @@ static int ad9545_aux_dpll_setup(struct ad9545_dev *dev)
 	init.name = ad9545_aux_dpll_name;
 	init.platform_ops = &ad9545_aux_dpll_clk_ops;
 	init.hw_ch_num = 1;
-	init.dev = dev;
+	init.dev_desc = dev;
 
 	return no_os_clk_init(&clk->hw, &init);
 }
@@ -2054,7 +2052,7 @@ static int ad9545_plls_setup(struct ad9545_dev *dev)
 			if (pll->profiles[j].en)
 				pll->num_parents++;
 
-		pll->parents = no_os_calloc(dev, pll->num_parents,
+		pll->parents = no_os_calloc(pll->num_parents,
 						  sizeof(*pll->parents));
 		if (!pll->parents)
 			return -ENOMEM;
@@ -2133,7 +2131,7 @@ static int ad9545_plls_setup(struct ad9545_dev *dev)
 
 static int ad9545_outputs_setup(struct ad9545_dev *dev)
 {
-	struct clk_init_data init[NO_OS_ARRAY_SIZE(ad9545_out_clk_names)] = {0};
+	struct no_os_clk_init_param init[NO_OS_ARRAY_SIZE(ad9545_out_clk_names)] = {0};
 	int out_i;
 	uint16_t addr;
 	int ret;
@@ -2192,7 +2190,7 @@ static int ad9545_outputs_setup(struct ad9545_dev *dev)
 		else
 			dev->out_clks[i].parent_clk = &dev->pll_clks[0].hw;
 
-		init[i].num_parents = 1;
+		// init[i].num_parents = 1;
 
 		ret = no_os_clk_init(&dev->out_clks[i].hw, &init);
 		if (ret < 0)
@@ -2230,7 +2228,7 @@ static int ad9545_outputs_setup(struct ad9545_dev *dev)
 	return 0;
 }
 
-static int ad9545_setup(struct ad9545_dev *dev)
+int ad9545_setup(struct ad9545_dev *dev)
 {
 	int ret;
 	uint32_t val;
