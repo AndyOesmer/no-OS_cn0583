@@ -211,11 +211,11 @@
 #define AD9545_PLL0_STATUS		0x3100
 #define AD9545_PLL0_OPERATION		0x3101
 
-#define AD9545_SYS_CLK_STABILITY_PERIOD_MASK	GENMASK(19, 0)
+#define AD9545_SYS_CLK_STABILITY_PERIOD_MASK	NO_OS_GENMASK(19, 0)
 
-#define AD9545_REF_CTRL_DIF_MSK			GENMASK(3, 2)
-#define AD9545_REF_CTRL_REFA_MSK		GENMASK(5, 4)
-#define AD9545_REF_CTRL_REFAA_MSK		GENMASK(7, 6)
+#define AD9545_REF_CTRL_DIF_MSK			NO_OS_GENMASK(3, 2)
+#define AD9545_REF_CTRL_REFA_MSK		NO_OS_GENMASK(5, 4)
+#define AD9545_REF_CTRL_REFAA_MSK		NO_OS_GENMASK(7, 6)
 
 #define AD9545_UPDATE_REGS			0x1
 #define AD9545_RESET_REGS			0x81
@@ -294,8 +294,8 @@
 #define AD9545_DPLLX_FAST_MODE(x)		(AD9545_DPLL0_FAST_MODE + ((x) * 0x100))
 #define AD9545_REFX_STATUS(x)			(AD9545_REFA_STATUS + (x))
 
-#define AD9545_PROFILE_SEL_MODE_MSK		GENMASK(3, 2)
-#define AD9545_PROFILE_SEL_MODE(x)		FIELD_PREP(AD9545_PROFILE_SEL_MODE_MSK, x)
+#define AD9545_PROFILE_SEL_MODE_MSK		NO_OS_GENMASK(3, 2)
+#define AD9545_PROFILE_SEL_MODE(x)		no_os_field_prep(AD9545_PROFILE_SEL_MODE_MSK, x)
 
 #define AD9545_NCOX_CENTER_FREQ(x)		(AD9545_NCO0_CENTER_FREQ + ((x) * 0x40))
 #define AD9545_NCOX_OFFSET_FREQ(x)		(AD9545_NCO0_OFFSET_FREQ + ((x) * 0x40))
@@ -315,14 +315,14 @@
 #define AD9545_NCO_CENTER_FREQ_WIDTH		(AD9545_NCO_CENTER_FREQ_INT_WIDTH + \
 						 AD9545_NCO_CENTER_FREQ_FRAC_WIDTH)
 
-#define AD9545_NCO_CENTER_FREQ_MSK		GENMASK_ULL(AD9545_NCO_CENTER_FREQ_WIDTH - 1, 0)
-#define AD9545_NCO_CENTER_FREQ_INT_MSK		GENMASK_ULL(AD9545_NCO_CENTER_FREQ_WIDTH - 1, \
+#define AD9545_NCO_CENTER_FREQ_MSK		NO_OS_GENMASK_ULL(AD9545_NCO_CENTER_FREQ_WIDTH - 1, 0)
+#define AD9545_NCO_CENTER_FREQ_INT_MSK		NO_OS_GENMASK_ULL(AD9545_NCO_CENTER_FREQ_WIDTH - 1, \
 							    AD9545_NCO_CENTER_FREQ_FRAC_WIDTH)
-#define AD9545_NCO_CENTER_FREQ_FRAC_MSK		GENMASK_ULL(AD9545_NCO_CENTER_FREQ_FRAC_WIDTH - 1, 0)
+#define AD9545_NCO_CENTER_FREQ_FRAC_MSK		NO_OS_GENMASK_ULL(AD9545_NCO_CENTER_FREQ_FRAC_WIDTH - 1, 0)
 
-#define AD9545_NCO_CENTER_FREQ_MAX		FIELD_MAX(AD9545_NCO_CENTER_FREQ_MSK)
-#define AD9545_NCO_CENTER_FREQ_INT_MAX		FIELD_MAX(AD9545_NCO_CENTER_FREQ_INT_MSK)
-#define AD9545_NCO_CENTER_FREQ_FRAC_MAX		FIELD_MAX(AD9545_NCO_CENTER_FREQ_FRAC_MSK)
+#define AD9545_NCO_CENTER_FREQ_MAX		no_os_field_max(AD9545_NCO_CENTER_FREQ_MSK)
+#define AD9545_NCO_CENTER_FREQ_INT_MAX		no_os_field_max(AD9545_NCO_CENTER_FREQ_INT_MSK)
+#define AD9545_NCO_CENTER_FREQ_FRAC_MAX		no_os_field_max(AD9545_NCO_CENTER_FREQ_FRAC_MSK)
 
 /*
  * AD9545 AUX NCO offset frequency register has 8-bit integer part and
@@ -333,14 +333,14 @@
 #define AD9545_NCO_OFFSET_FREQ_WIDTH		(AD9545_NCO_OFFSET_FREQ_INT_WIDTH + \
 						 AD9545_NCO_OFFSET_FREQ_FRAC_WIDTH)
 
-#define AD9545_NCO_OFFSET_FREQ_MSK		GENMASK_ULL(AD9545_NCO_OFFSET_FREQ_WIDTH - 1, 0)
-#define AD9545_NCO_OFFSET_FREQ_INT_MSK		GENMASK_ULL(AD9545_NCO_OFFSET_FREQ_WIDTH - 1, \
+#define AD9545_NCO_OFFSET_FREQ_MSK		NO_OS_GENMASK_ULL(AD9545_NCO_OFFSET_FREQ_WIDTH - 1, 0)
+#define AD9545_NCO_OFFSET_FREQ_INT_MSK		NO_OS_GENMASK_ULL(AD9545_NCO_OFFSET_FREQ_WIDTH - 1, \
 							    AD9545_NCO_OFFSET_FREQ_FRAC_WIDTH)
-#define AD9545_NCO_OFFSET_FREQ_FRAC_MSK		GENMASK_ULL(AD9545_NCO_OFFSET_FREQ_FRAC_WIDTH - 1, 0)
+#define AD9545_NCO_OFFSET_FREQ_FRAC_MSK		NO_OS_GENMASK_ULL(AD9545_NCO_OFFSET_FREQ_FRAC_WIDTH - 1, 0)
 
-#define AD9545_NCO_OFFSET_FREQ_MAX		FIELD_MAX(AD9545_NCO_OFFSET_FREQ_MSK)
-#define AD9545_NCO_OFFSET_FREQ_INT_MAX		FIELD_MAX(AD9545_NCO_OFFSET_FREQ_INT_MSK)
-#define AD9545_NCO_OFFSET_FREQ_FRAC_MAX		FIELD_MAX(AD9545_NCO_OFFSET_FREQ_FRAC_MSK)
+#define AD9545_NCO_OFFSET_FREQ_MAX		no_os_field_max(AD9545_NCO_OFFSET_FREQ_MSK)
+#define AD9545_NCO_OFFSET_FREQ_INT_MAX		no_os_field_max(AD9545_NCO_OFFSET_FREQ_INT_MSK)
+#define AD9545_NCO_OFFSET_FREQ_FRAC_MAX		no_os_field_max(AD9545_NCO_OFFSET_FREQ_FRAC_MSK)
 
 #define AD9545_NCO_FREQ_INT_MAX			(AD9545_NCO_CENTER_FREQ_INT_MAX + \
 						 AD9545_NCO_OFFSET_FREQ_INT_MAX)
@@ -361,69 +361,69 @@
 #define AD9545_COMPNESATE_VIA_AUX_DPLL		0x44
 
 /* define AD9545_DPLLX_EN bitfields */
-#define AD9545_EN_PROFILE_MSK			BIT(0)
-#define AD9545_SEL_PRIORITY_MSK			GENMASK(5, 1)
+#define AD9545_EN_PROFILE_MSK			NO_OS_BIT(0)
+#define AD9545_SEL_PRIORITY_MSK			NO_OS_GENMASK(5, 1)
 
 /* define AD9545_DPLLX_FB_MODE bitfields */
-#define AD9545_EN_HITLESS_MSK			BIT(0)
-#define AD9545_TAG_MODE_MSK			GENMASK(4, 2)
-#define AD9545_BASE_FILTER_MSK			BIT(7)
+#define AD9545_EN_HITLESS_MSK			NO_OS_BIT(0)
+#define AD9545_TAG_MODE_MSK			NO_OS_GENMASK(4, 2)
+#define AD9545_BASE_FILTER_MSK			NO_OS_BIT(7)
 
 /* AD9545_PWR_CALIB_CHX bitfields */
-#define AD9545_PWR_DOWN_CH			BIT(0)
-#define AD9545_CALIB_APLL			BIT(1)
+#define AD9545_PWR_DOWN_CH			NO_OS_BIT(0)
+#define AD9545_CALIB_APLL			NO_OS_BIT(1)
 
 /* AD9545_SYNC_CTRLX bitfields */
-#define AD9545_SYNC_CTRL_DPLL_REF_MSK		BIT(2)
-#define AD9545_SYNC_CTRL_MODE_MSK		GENMASK(1, 0)
+#define AD9545_SYNC_CTRL_DPLL_REF_MSK		NO_OS_BIT(2)
+#define AD9545_SYNC_CTRL_MODE_MSK		NO_OS_GENMASK(1, 0)
 
 /* AD9545_QX_PHASE_CONF bitfields */
-#define AD9545_QX_HALF_DIV_MSK			BIT(5)
-#define AD9545_QX_PHASE_32_MSK			BIT(6)
+#define AD9545_QX_HALF_DIV_MSK			NO_OS_BIT(5)
+#define AD9545_QX_PHASE_32_MSK			NO_OS_BIT(6)
 
 /* AD9545_DIV_OPS_QX bitfields */
-#define AD9545_DIV_OPS_MUTE_A_MSK		BIT(2)
-#define AD9545_DIV_OPS_MUTE_AA_MSK		BIT(3)
+#define AD9545_DIV_OPS_MUTE_A_MSK		NO_OS_BIT(2)
+#define AD9545_DIV_OPS_MUTE_AA_MSK		NO_OS_BIT(3)
 
 /* AD9545 Modulator bitfields */
-#define AD9545_MODULATOR_EN			BIT(0)
+#define AD9545_MODULATOR_EN			NO_OS_BIT(0)
 
 /* AD9545_NSHOT_REQ_CH bitfields */
-#define AD9545_NSHOT_NR_MSK			GENMASK(5, 0)
+#define AD9545_NSHOT_NR_MSK			NO_OS_GENMASK(5, 0)
 
 /* AD9545_CTRL_CH bitfields */
-#define AD9545_CTRL_CH_NSHOT_MSK		BIT(0)
+#define AD9545_CTRL_CH_NSHOT_MSK		NO_OS_BIT(0)
 
 /* AD9545_PLL_STATUS bitfields */
 #define AD9545_PLLX_LOCK(x, y)			((1 << (4 + (x))) & (y))
 
 /* AD9545_MISC bitfields */
-#define AD9545_MISC_AUX_NC0_ERR_MSK		GENMASK(5, 4)
-#define AD9545_MISC_AUX_NC1_ERR_MSK		GENMASK(7, 6)
-#define AD9545_AUX_DPLL_LOCK_MSK		BIT(1)
-#define AD9545_AUX_DPLL_REF_FAULT		BIT(2)
+#define AD9545_MISC_AUX_NC0_ERR_MSK		NO_OS_GENMASK(5, 4)
+#define AD9545_MISC_AUX_NC1_ERR_MSK		NO_OS_GENMASK(7, 6)
+#define AD9545_AUX_DPLL_LOCK_MSK		NO_OS_BIT(1)
+#define AD9545_AUX_DPLL_REF_FAULT		NO_OS_BIT(2)
 
 /* AD9545_REFX_STATUS bitfields */
-#define AD9545_REFX_SLOW_MSK			BIT(0)
-#define AD9545_REFX_FAST_MSK			BIT(1)
-#define AD9545_REFX_JITTER_MSK			BIT(2)
-#define AD9545_REFX_FAULT_MSK			BIT(3)
-#define AD9545_REFX_VALID_MSK			BIT(4)
-#define AD9545_REFX_LOS_MSK			BIT(5)
+#define AD9545_REFX_SLOW_MSK			NO_OS_BIT(0)
+#define AD9545_REFX_FAST_MSK			NO_OS_BIT(1)
+#define AD9545_REFX_JITTER_MSK			NO_OS_BIT(2)
+#define AD9545_REFX_FAULT_MSK			NO_OS_BIT(3)
+#define AD9545_REFX_VALID_MSK			NO_OS_BIT(4)
+#define AD9545_REFX_LOS_MSK			NO_OS_BIT(5)
 
 /* AD9545_PLL0_STATUS bitfields */
-#define AD9545_PLL_LOCKED			BIT(0)
+#define AD9545_PLL_LOCKED			NO_OS_BIT(0)
 
 /* AD9545_PLL0_OPERATION bitfields */
-#define AD9545_PLL_FREERUN			BIT(0)
-#define AD9545_PLL_HOLDOVER			BIT(1)
-#define AD9545_PLL_ACTIVE			BIT(3)
-#define AD9545_PLL_ACTIVE_PROFILE		GENMASK(6, 4)
+#define AD9545_PLL_FREERUN			NO_OS_BIT(0)
+#define AD9545_PLL_HOLDOVER			NO_OS_BIT(1)
+#define AD9545_PLL_ACTIVE			NO_OS_BIT(3)
+#define AD9545_PLL_ACTIVE_PROFILE		NO_OS_GENMASK(6, 4)
 
-#define AD9545_SYS_PLL_STABLE_MSK		GENMASK(1, 0)
+#define AD9545_SYS_PLL_STABLE_MSK		NO_OS_GENMASK(1, 0)
 #define AD9545_SYS_PLL_STABLE(x)		(((x) & AD9545_SYS_PLL_STABLE_MSK) == 0x3)
 
-#define AD9545_APLL_LOCKED(x)			((x) & BIT(3))
+#define AD9545_APLL_LOCKED(x)			((x) & NO_OS_BIT(3))
 
 /*  AD9545 tagging modes */
 #define AD9545_NO_TAGGING			0
@@ -431,7 +431,7 @@
 
 #define AD9545_SYS_CLK_STABILITY_MS	50
 
-#define AD9545_R_DIV_MSK		GENMASK(29, 0)
+#define AD9545_R_DIV_MSK		NO_OS_GENMASK(29, 0)
 #define AD9545_R_DIV_MAX		0x40000000
 #define AD9545_IN_MAX_TDC_FREQ_HZ	200000
 
@@ -622,7 +622,7 @@ struct ad9545_out_clk {
 	bool			source_current;
 	enum ad9545_output_mode	output_mode;
 	uint32_t		source_ua;
-	struct no_os_clk_desc	hw;
+	struct no_os_clk_desc	*hw;
 	unsigned int		address;
 	unsigned long		rate_requested_hz;
 	struct no_os_clk_desc	*parent_clk;
@@ -645,7 +645,7 @@ struct ad9545_pll_clk {
 	struct ad9545_dev		*dev;
 	bool				pll_used;
 	unsigned int			address;
-	struct no_os_clk_desc		hw;
+	struct no_os_clk_desc		*hw;
 	unsigned int			num_parents;
 	const struct no_os_clk_desc	**parents;
 	struct ad9545_dpll_profile	profiles[AD9545_MAX_DPLL_PROFILES];
@@ -659,7 +659,7 @@ struct ad9545_pll_clk {
 };
 
 struct ad9545_ref_in_clk {
-	struct no_os_clk_desc		hw;
+	struct no_os_clk_desc		*hw;
 	struct ad9545_dev		*dev;
 	uint32_t			r_div_ratio;
 	bool				ref_used;
@@ -682,7 +682,7 @@ struct ad9545_ref_in_clk {
 };
 
 struct ad9545_aux_nco_clk {
-	struct no_os_clk_desc		hw;
+	struct no_os_clk_desc		*hw;
 	bool				nco_used;
 	struct ad9545_dev		*dev;
 	unsigned int			address;
@@ -691,7 +691,7 @@ struct ad9545_aux_nco_clk {
 };
 
 struct ad9545_aux_tdc_clk {
-	struct no_os_clk_desc		hw;
+	struct no_os_clk_desc		*hw;
 	bool				tdc_used;
 	struct ad9545_dev		*dev;
 	unsigned int			address;
@@ -700,7 +700,7 @@ struct ad9545_aux_tdc_clk {
 };
 
 struct ad9545_aux_dpll_clk {
-	struct no_os_clk_desc		hw;
+	struct no_os_clk_desc		*hw;
 	bool				dpll_used;
 	struct ad9545_dev		*dev;
 	unsigned int			source;
@@ -762,9 +762,9 @@ struct ad9545_dev {
 
 struct ad9545_init_param {
 	/* SPI */
-	struct no_os_spi_init_param	spi_init;
+	struct no_os_spi_init_param	*spi_init;
 	/* I2C */
-	struct no_os_i2c_init_param	i2c_init;
+	struct no_os_i2c_init_param	*i2c_init;
 	/* Device Settings */
 	enum ad9545_comm_type		comm_type;
 	struct ad9545_sys_clk		sys_clk;
