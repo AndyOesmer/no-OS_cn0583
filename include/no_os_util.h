@@ -89,6 +89,14 @@
 		t = t >> (NO_OS_BITS_PER_LONG - (h + 1));		\
 		t;						\
 })
+#define NO_OS_GENMASK_ULL(h, l) ({						\
+		unsigned long long t = (unsigned long long)(~0ULL);	\
+		t = t << (64 - (h - l + 1));				\
+		t = t >> (64 - (h + 1));				\
+		t;							\
+})
+
+
 
 #define no_os_bswap_constant_32(x) \
 	((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >>  8) | \
@@ -142,6 +150,9 @@ uint32_t no_os_find_closest(int32_t val,
 uint32_t no_os_field_prep(uint32_t mask, uint32_t val);
 /* Get a field specified by a mask from a word. */
 uint32_t no_os_field_get(uint32_t mask, uint32_t word);
+/* Produce the maximum value representable by a field */
+uint32_t no_os_field_max(uint32_t mask);
+
 /* Log base 2 of the given number. */
 int32_t no_os_log_base_2(uint32_t x);
 /* Find greatest common divisor of the given two numbers. */
