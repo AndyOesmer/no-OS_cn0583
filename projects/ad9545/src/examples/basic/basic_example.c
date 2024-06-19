@@ -43,9 +43,11 @@
 #include "basic_example.h"
 #include "common_data.h"
 #include "ad9545.h"
+#include "no_os_clk.h"
 #include "no_os_delay.h"
 #include "no_os_print_log.h"
 #include "no_os_util.h"
+#include <stdbool.h>
 
 /******************************************************************************/
 /************************ Functions Declarations ******************************/
@@ -59,29 +61,82 @@
 int basic_example_main()
 {
 	struct ad9545_dev *ad9545_dev;
-	uint16_t val;
 	int ret;
 
-	// printf("AD9545 basic_example -\n\r");
-	/* Use ad7091r4_ip and ad7091r2_ip for AD7091R-4 and AD7091R-2 respectively */
-	ret = ad9545_init(&ad9545_dev, ad9545_ip);
+	/* Ref. Clock */
+	ad9545_ip.sys_clk.sys_clk_crystal = true;
+	ad9545_ip.sys_clk.ref_freq_hz = 52000000;
+	/* NCO params */
+	ad9545_ip.aux_nco_clks[AD9545_NCO0].nco_used = true;
+	ad9545_ip.aux_nco_clks[AD9545_NCO0].address = AD9545_NCO0;
+	ad9545_ip.aux_nco_clks[AD9545_NCO0].freq_thresh_ps = 16000000;
+	ad9545_ip.aux_nco_clks[AD9545_NCO0].phase_thresh_ps = 16000000;
+	/* PLL params */
+	/* PLL1 */
+	ad9545_ip.pll_clks[AD9545_PLL1].pll_used = true;
+	ad9545_ip.pll_clks[AD9545_PLL1].address = AD9545_PLL1;
+	/* PLL1 Profiles */
+	ad9545_ip.pll_clks[AD9545_PLL1].profiles[0].en = 1;
+	ad9545_ip.pll_clks[AD9545_PLL1].profiles[0].address = 0;
+	ad9545_ip.pll_clks[AD9545_PLL1].profiles[0].tdc_source = 4;
+	ad9545_ip.pll_clks[AD9545_PLL1].profiles[0].priority = 0;
+	ad9545_ip.pll_clks[AD9545_PLL1].profiles[0].loop_bw_uhz = 200000000;
+	/* Output Clocks params */
+	/* OUT Q1A */
+	ad9545_ip.out_clks[AD9545_Q1A].output_used = true;
+	ad9545_ip.out_clks[AD9545_Q1A].address = AD9545_Q1A;
+	ad9545_ip.out_clks[AD9545_Q1A].output_mode = DRIVER_MODE_DUAL_DIV;
+	ad9545_ip.out_clks[AD9545_Q1A].source_ua = 15000;
+	/* OUT Q1B */
+	ad9545_ip.out_clks[AD9545_Q1B].output_used = true;
+	ad9545_ip.out_clks[AD9545_Q1B].address = AD9545_Q1B;
+	ad9545_ip.out_clks[AD9545_Q1B].output_mode = DRIVER_MODE_DUAL_DIV;
+	ad9545_ip.out_clks[AD9545_Q1B].source_ua = 15000;
+
+	/* Input Reference Clock */
+	ad9545_ip.ref_in_clks[0].address = 0;
+	ad9545_ip.ref_in_clks[0].mode = AD9545_SINGLE_ENDED;
+	ad9545_ip.ref_in_clks[0].r_div_ratio = 200;
+	ad9545_ip.ref_in_clks[0].d_tol_ppb = 10000000;
+	ad9545_ip.ref_in_clks[0].monitor_hyst_scale = 87500;
+	ad9545_ip.ref_in_clks[0].valid_t_ms = 1;
+	ad9545_ip.ref_in_clks[0].freq_thresh_ps = 0xFFFFFF;
+	ad9545_ip.ref_in_clks[0].phase_thresh_ps = 0xFFFFFF;
+	ad9545_ip.ref_in_clks[0].freq_lock_fill_rate = 20;
+	ad9545_ip.ref_in_clks[0].freq_lock_drain_rate = 20;
+	ad9545_ip.ref_in_clks[0].phase_lock_fill_rate = 20;
+	ad9545_ip.ref_in_clks[0].phase_lock_drain_rate = 20;
+	// ad9545_ip.ref_in_clks[0].parent_clk = ??; //TODO: Parent clock?
+
+	printf("AD9545 basic_example -\n\r");
+	ret = ad9545_init(&ad9545_dev, &ad9545_ip);
 	if (ret)
 		return ret;
 
-	// ad9545_setup(ad9545_dev);
-	// if (ret)
-	// 	return ret;
-	/* Enable all channels */
-	// ret = ad7091r8_spi_reg_write(ad7091r8_dev, 0x01, 0xFF);
+	ret = ad9545_setup(ad9545_dev);
 	if (ret)
 		goto error;
 
+	/* Set Clocks' rate */
+	ret = no_os_clk_recalc_rate(ad9545_dev->clks[AD9545_CLK_NCO][AD9545_NCO0], 10000);
+	if (ret)
+		goto error;
+	ret = no_os_clk_recalc_rate(ad9545_dev->clks[AD9545_CLK_PLL][AD9545_PLL1], 1875000000);
+	if (ret)
+		goto error;
+	ret = no_os_clk_recalc_rate(ad9545_dev->clks[AD9545_CLK_OUT][AD9545_Q1A], 156250000);
+	if (ret)
+		goto error;
+	ret = no_os_clk_recalc_rate(ad9545_dev->clks[AD9545_CLK_OUT][AD9545_Q1A], 156250000);
+	if (ret)
+		goto error;
+	
 	while(1) {
 		no_os_mdelay(1000);
 	}
 
 error:
 	printf("Error on AD9545 basic_example: %d\n\r", ret);
-	// ad7091r8_remove(ad7091r8_dev);
+	ad9545_remove(ad9545_dev);
 	return ret;
 }

@@ -59,25 +59,3 @@ struct max_spi_init_param ad9545_spi_extra_ip  = {
 struct max_i2c_init_param ad9545_i2c_extra_ip = {
 	.vssel = MXC_GPIO_VSSEL_VDDIOH
 };
-
-// struct max_gpio_init_param ad7091r8_gpio_extra_ip = {
-// 	.vssel = MXC_GPIO_VSSEL_VDDIOH,
-// };
-
-// /* Initialization for RESET GPIO. */
-// struct no_os_gpio_init_param ad7091r8_gpio_reset_ip = {
-// 	.port = GPIO_RESET_PORT_NUM,
-// 	.number = GPIO_RESET_PIN_NUM,
-// 	.pull = NO_OS_PULL_NONE,
-// 	.platform_ops = GPIO_OPS,
-// 	.extra = GPIO_EXTRA
-// };
-
-// /* Initialization for CONVST GPIO. */
-// struct no_os_gpio_init_param ad7091r8_gpio_convst_ip = {
-// 	.port = GPIO_CONVST_PORT_NUM,
-// 	.number = GPIO_CONVST_PIN_NUM,
-// 	.pull = NO_OS_PULL_NONE,
-// 	.platform_ops = GPIO_OPS,
-// 	.extra = GPIO_EXTRA
-// };

@@ -1,6 +1,6 @@
 /***************************************************************************//**
  *   @file   common_data.c
- *   @brief  Defines common data to be used by ad9545-sdz example.
+ *   @brief  Defines common data to be used by ad9545 example.
  *   @author Marcelo Schmitt (marcelo.schmitt@analog.com)
 ********************************************************************************
  * Copyright 2024(c) Analog Devices, Inc.
@@ -41,6 +41,8 @@
 /***************************** Include Files **********************************/
 /******************************************************************************/
 #include "common_data.h"
+#include "ad9545.h"
+#include <stdbool.h>
 
 /******************************************************************************/
 /********************** Macros and Constants Definitions **********************/
@@ -57,7 +59,7 @@ struct no_os_uart_init_param ad9545_uart_ip = {
 	.platform_ops = UART_OPS,
 };
 
-const struct no_os_spi_init_param ad9545_spi_ip = {
+struct no_os_spi_init_param ad9545_spi_ip = {
 	.device_id = SPI_DEVICE_ID,
 	.max_speed_hz = SPI_BAUDRATE,
 	.bit_order = NO_OS_SPI_BIT_ORDER_MSB_FIRST,
@@ -67,7 +69,7 @@ const struct no_os_spi_init_param ad9545_spi_ip = {
 	.extra = SPI_EXTRA
 };
 
-const struct no_os_i2c_init_param ad9545_i2c_ip = {
+struct no_os_i2c_init_param ad9545_i2c_ip = {
 	.device_id = 1,
 	.max_speed_hz = 400000,
 	.slave_address = 000, //FIXME: ?
@@ -75,11 +77,9 @@ const struct no_os_i2c_init_param ad9545_i2c_ip = {
 	.extra = I2C_EXTRA
 };
 
-
 struct ad9545_init_param ad9545_ip = {
-	.spi_init = ad9545_spi_ip,
-	.i2c_init = ad9545_i2c_ip,
-	.comm_type = COMM_TYPE
-	// Complete basic specs
+	.spi_init = &ad9545_spi_ip,
+	.i2c_init = &ad9545_i2c_ip,
+	.comm_type = COMM_TYPE,
 };
 
