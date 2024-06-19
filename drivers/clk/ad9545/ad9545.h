@@ -813,8 +813,12 @@ int32_t ad9545_write_mask(struct ad9545_dev *dev,
 			   uint32_t mask,
 			   uint8_t data);
 
+int32_t ad9545_setup(struct ad9545_dev *dev);
 
 int32_t ad9545_init(struct ad9545_dev **device,
-		     struct ad9545_init_param init_param);
+		     struct ad9545_init_param *init_param);
+
+int32_t ad9545_remove(struct ad9545_dev *dev);
+
 
 #endif // ad9545_H_
