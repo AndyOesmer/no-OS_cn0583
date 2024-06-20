@@ -1,7 +1,7 @@
 /***************************************************************************//**
  *   @file   common_data.c
  *   @brief  Defines common data to be used by ad9545 example.
- *   @author Marcelo Schmitt (marcelo.schmitt@analog.com)
+ *   @author Jonathan Santos (jonathan.santos@analog.com)
 ********************************************************************************
  * Copyright 2024(c) Analog Devices, Inc.
  *

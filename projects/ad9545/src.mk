@@ -28,6 +28,7 @@ INCS += $(INCLUDE)/no_os_delay.h     \
 		$(INCLUDE)/no_os_init.h \
 		$(INCLUDE)/no_os_alloc.h \
 		$(INCLUDE)/no_os_clk.h \
+		$(INCLUDE)/no_os_clk_fixed.h \
         	$(INCLUDE)/no_os_mutex.h
 
 SRCS += $(DRIVERS)/api/no_os_gpio.c \
@@ -42,6 +43,7 @@ SRCS += $(DRIVERS)/api/no_os_gpio.c \
 		$(NO-OS)/util/no_os_util.c \
 		$(NO-OS)/util/no_os_alloc.c \
 		$(NO-OS)/util/no_os_clk.c \
+		$(NO-OS)/util/no_os_clk_fixed.c \
         	$(NO-OS)/util/no_os_mutex.c
 
 INCS += $(DRIVERS)/clk/ad9545/ad9545.h

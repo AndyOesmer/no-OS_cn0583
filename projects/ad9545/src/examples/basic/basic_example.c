@@ -44,6 +44,7 @@
 #include "common_data.h"
 #include "ad9545.h"
 #include "no_os_clk.h"
+#include "no_os_clk_fixed.h"
 #include "no_os_delay.h"
 #include "no_os_print_log.h"
 #include "no_os_util.h"
@@ -61,6 +62,11 @@
 int basic_example_main()
 {
 	struct ad9545_dev *ad9545_dev;
+	struct no_os_clk_desc *ref_a_clk;
+	const struct no_os_clk_fixed_param input_refa ={
+		.name = "Ref-A",
+		.clk_frequency = 10000000
+	};
 	int ret;
 
 	/* Ref. Clock */
@@ -106,9 +112,16 @@ int basic_example_main()
 	ad9545_ip.ref_in_clks[0].freq_lock_drain_rate = 20;
 	ad9545_ip.ref_in_clks[0].phase_lock_fill_rate = 20;
 	ad9545_ip.ref_in_clks[0].phase_lock_drain_rate = 20;
-	// ad9545_ip.ref_in_clks[0].parent_clk = ??; //TODO: Parent clock?
+	
+	/* Initialize Fixed clock to use as input reference */
+	ret = no_os_clk_fixed_init(&ref_a_clk, &input_refa);
+	if (ret)
+		return ret;
+
+	ad9545_ip.ref_in_clks[0].parent_clk = ref_a_clk;
 
 	printf("AD9545 basic_example -\n\r");
+	
 	ret = ad9545_init(&ad9545_dev, &ad9545_ip);
 	if (ret)
 		return ret;
